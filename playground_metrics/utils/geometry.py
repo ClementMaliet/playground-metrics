@@ -1,3 +1,4 @@
+from abc import ABC, abstractmethod
 from enum import Enum
 from os import cpu_count
 from typing import Sequence
@@ -22,17 +23,86 @@ class GeometryType(Enum):
     GEOMETRYCOLLECTION = 7
 
 
-def _sanitize(x):
-    if len(x.shape) > 1:
-        for i in range(1, len(x.shape)):
-            x = x.squeeze(i)
-    prepare(x)
-    return x
-
-
-class _IntersectionOverUnionRTree:
+class _Similarity(ABC):
     @staticmethod
-    def _area_op_threaded(operation, candidates, x, y, default):
+    def _sanitize(x):
+        if len(x.shape) > 1:
+            for i in range(1, len(x.shape)):
+                x = x.squeeze(i)
+        prepare(x)
+        return x
+
+    @abstractmethod
+    def _op_threaded(self, *args, **kwargs):
+        """Compute the similarity in a threaded fashion, preferably using Dask-Array."""
+        raise NotImplementedError()
+
+    @abstractmethod
+    def _op(self, *args, **kwargs):
+        """Compute the similarity in a single-threaded fashion."""
+        raise NotImplementedError()
+
+    @abstractmethod
+    def _call(self, x, y, candidates, operation):
+        """Compute the similarity matrix using the R-Tree matches and the backend operation."""
+        raise NotImplementedError()
+
+    def _prepare(self, x, y, force_thread=False):
+        """Compute the R-Tree correspondences between geometries and select the backend implementation.
+
+        Args:
+            x (ArrayLike): An array of geometries.
+            y (ArrayLike): An array of geometries.
+            force_thread (bool): Force the use of the threaded implementation. Note that this can incur a significant
+                computational cost for small input and fail on input too small to be reliably chunked.
+
+        Returns:
+            Tuple[np.ndarray, np.ndarray, np.ndarray, Callable]: A pair of numpy arrays inputs, an array of x to y
+             R-Tree matches and a backend implementation function.
+
+        """
+        x, y = self._sanitize(x), self._sanitize(y)
+
+        tree = STRtree(y)
+        candidates = tree.query_bulk(x, predicate='intersects').transpose()
+
+        operation = \
+            self._op_threaded \
+            if force_thread else self._op_threaded \
+            if candidates.shape[0] > (cpu_count() * 1000) else self._op
+
+        return x, y, candidates, operation
+
+    def __call__(self, x, y, force_thread=False):
+        """Compute the similarity in between every possible geometry pairs from two arrays of geometries.
+
+        Args:
+            x (ArrayLike): An array of geometries.
+            y (ArrayLike): An array of geometries.
+            force_thread (bool): Force the use of the threaded implementation. Note that this can incur a significant
+                computational cost for small input and fail on input too small to be reliably chunked.
+
+        Returns:
+            numpy.ndarray: A similarity matrix.
+
+        """
+        if not isinstance(x, (Sequence, np.ndarray)):
+            x = [x]
+
+        if not isinstance(y, (Sequence, np.ndarray)):
+            y = [y]
+
+        x, y = np.asarray(x), np.asarray(y)
+
+        if x.size == 0 or y.size == 0:
+            return np.zeros((len(x), len(y)))
+
+        x, y, candidates, operation = self._prepare(x, y, force_thread=force_thread)
+        return self._call(x, y, candidates, operation)
+
+
+class _IntersectionOverUnionRTree(_Similarity):
+    def _op_threaded(self, operation, candidates, x, y, default):
         areas = default((len(x), len(y)))
 
         # Define the operation
@@ -46,64 +116,17 @@ class _IntersectionOverUnionRTree:
                                                                 num_workers=cpu_count())
         return areas
 
-    @staticmethod
-    def _area_op(operation, candidates, x, y, default):
+    def _op(self, operation, candidates, x, y, default):
         areas = default((len(x), len(y)))
         areas[candidates[:, 0], candidates[:, 1]] = area(operation(x[candidates[:, 0]], y[candidates[:, 1]])).squeeze()
         return areas
 
-    def _call(self, x, y, force_thread=False):
-        x, y = _sanitize(x), _sanitize(y)
-
-        tree = STRtree(y)
-        candidates = tree.query_bulk(x, predicate='intersects').transpose()
-
-        area_op = self._area_op_threaded \
-            if force_thread else self._area_op_threaded \
-            if x.shape[0] * y.shape[0] > (cpu_count() * 100) else self._area_op
-
-        return area_op(intersection, candidates, x, y, np.zeros) / area_op(union, candidates, x, y, np.ones)
-
-    def __call__(self, x, y, force_thread=False):
-        if x.size == 0 or y.size == 0:
-            return np.zeros((len(x), len(y)))
-
-        if x.size == 1 and y.size == 1:
-            return self._call(x, y, force_thread=force_thread)
-
-        return self._call(x, y, force_thread=force_thread)
+    def _call(self, x, y, candidates, operation):
+        return operation(intersection, candidates, x, y, np.zeros) / operation(union, candidates, x, y, np.ones)
 
 
-_iou_rtree_computer = _IntersectionOverUnionRTree()
-
-
-def intersection_over_union(x, y, force_thread=False):
-    """Compute the intersection-over-union in between every possible geometry pairs from two arrays of geometries.
-
-    Args:
-        x (ArrayLike): An array of geometries.
-        y (ArrayLike): An array of geometries.
-        force_thread (bool): Force the use of the threaded implementation. Note that this can incur a significant
-            computational cost for small input and fail on input too small to be reliably chunked.
-
-    Returns:
-        numpy.ndarray: An intersection-over-union matrix.
-
-    """
-    if not isinstance(x, (Sequence, np.ndarray)):
-        x = [x]
-
-    if not isinstance(y, (Sequence, np.ndarray)):
-        y = [y]
-
-    x, y = np.asarray(x), np.asarray(y)
-
-    return _iou_rtree_computer(x, y, force_thread=force_thread)
-
-
-class _EuclideanDistanceRTree:
-    @staticmethod
-    def _distance_op_threaded(candidates, x, y):
+class _EuclideanDistanceRTree(_Similarity):
+    def _op_threaded(self, candidates, x, y):
         point_x = as_points(x)
         point_y = as_points(y)
 
@@ -119,8 +142,7 @@ class _EuclideanDistanceRTree:
                                                                 num_workers=cpu_count())
         return areas
 
-    @staticmethod
-    def _distance_op(candidates, x, y):
+    def _op(self, candidates, x, y):
         point_x = as_points(x)
         point_y = as_points(y)
 
@@ -131,29 +153,28 @@ class _EuclideanDistanceRTree:
 
         return areas
 
-    def _call(self, x, y, force_thread=False):
-        x, y = _sanitize(x), _sanitize(y)
-
-        tree = STRtree(y)
-        candidates = tree.query_bulk(x).transpose()
-
-        distance_op = self._distance_op_threaded \
-            if force_thread else self._distance_op_threaded \
-            if x.shape[0] * y.shape[0] > (cpu_count() * 100) else self._distance_op
-
-        return 1 - distance_op(candidates, x, y)
-
-    def __call__(self, x, y, force_thread=False):
-        if x.size == 0 or y.size == 0:
-            return np.zeros((len(x), len(y)))
-
-        if x.size == 1 and y.size == 1:
-            return self._call(x, y, force_thread=force_thread)
-
-        return self._call(x, y, force_thread=force_thread)
+    def _call(self, x, y, candidates, operation):
+        return 1 - operation(candidates, x, y)
 
 
+_iou_rtree_computer = _IntersectionOverUnionRTree()
 _distance_rtree_computer = _EuclideanDistanceRTree()
+
+
+def intersection_over_union(x, y, force_thread=False):
+    """Compute the intersection-over-union in between every possible geometry pairs from two arrays of geometries.
+
+    Args:
+        x (ArrayLike): An array of geometries.
+        y (ArrayLike): An array of geometries.
+        force_thread (bool): Force the use of the threaded implementation. Note that this can incur a significant
+            computational cost for small input and fail on input too small to be reliably chunked.
+
+    Returns:
+        numpy.ndarray: An intersection-over-union matrix.
+
+    """
+    return _iou_rtree_computer(x, y, force_thread=force_thread)
 
 
 def euclidean_distance(x, y, force_thread=False):
@@ -169,14 +190,6 @@ def euclidean_distance(x, y, force_thread=False):
         numpy.ndarray: An intersection-over-union matrix.
 
     """
-    if not isinstance(x, (Sequence, np.ndarray)):
-        x = [x]
-
-    if not isinstance(y, (Sequence, np.ndarray)):
-        y = [y]
-
-    x, y = np.asarray(x), np.asarray(y)
-
     return _distance_rtree_computer(x, y, force_thread=force_thread)
 
 
