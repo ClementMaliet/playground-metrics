@@ -156,7 +156,7 @@ threshold-based and membership-based.
 The former is straightforward and consist in eliminating similarities
 below a certain threshold from possible matches.
 
-It is used by the :class:`~playground_metrics.match_detections.MatchEngineIoU`, :class:`~playground_metrics.match_detections.MatchEngineEuclideanDistance` and :class:`~playground_metrics.match_detections.MatchEngineConstantBox` match engines.
+It is used by the :class:`~playground_metrics.match_detections.MatchEngineIoU`, :class:`~playground_metrics.match_detections.MatchEngineEuclideanDistance` and :class:`~playground_metrics.match_detections.ConstantBoxMatcher` match engines.
 
 The latter eliminate ``(det, gt)`` in which the detection is not inside
 the ground truth or vice-versa. The former is straightforward and

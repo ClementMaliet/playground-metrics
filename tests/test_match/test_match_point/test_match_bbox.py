@@ -5,8 +5,8 @@ from tests.resources.reference_functions import naive_compute_threshold_distance
     sort_detection_by_confidence, naive_compute_point_in_box_distance_similarity_matrix, \
     naive_compute_constant_box_similarity_matrix
 
-from playground_metrics.match.engines import MatchEngineEuclideanDistance, MatchEnginePointInBox, \
-    MatchEngineConstantBox
+from playground_metrics.match.matcher import EuclideanMatcher, PointInBoxMatcher, \
+    ConstantBoxMatcher
 from playground_metrics.utils.conversion import convert_to_bounding_box
 
 detections = np.concatenate((10 * np.array([[14.5, 0, 26, 5],
@@ -46,7 +46,7 @@ def th(request):
 
 class TestMatchEngineBboxConstantBox:
     def test_similarity(self, th):
-        matcher = MatchEngineConstantBox(0.5, 'coco', th)
+        matcher = ConstantBoxMatcher(0.5, 'coco', th)
         ref_iou = naive_compute_constant_box_similarity_matrix(sort_detection_by_confidence(detections), gt, th)
         iou = matcher.compute_similarity_matrix(detections, gt)
         print(iou)
@@ -56,7 +56,7 @@ class TestMatchEngineBboxConstantBox:
 
 class TestMatchEngineBboxPointInBox:
     def test_similarity(self):
-        matcher = MatchEnginePointInBox('coco')
+        matcher = PointInBoxMatcher('coco')
         ref_iou = naive_compute_point_in_box_distance_similarity_matrix(sort_detection_by_confidence(detections), gt)
         iou = matcher.compute_similarity_matrix(detections, gt)
         print(iou)
@@ -65,7 +65,7 @@ class TestMatchEngineBboxPointInBox:
         assert np.all(iou[np.logical_not(np.isinf(iou))] == ref_iou[np.logical_not(np.isinf(iou))])
 
     def test_match_coco(self):
-        matcher = MatchEnginePointInBox('coco')
+        matcher = PointInBoxMatcher('coco')
         assert np.all(matcher.match(detections, gt) == np.array([[0, 0, 0, 0, 0, 0],
                                                                  [0, 0, 0, 0, 0, 1],
                                                                  [0, 0, 0, 0, 1, 0],
@@ -76,7 +76,7 @@ class TestMatchEngineBboxPointInBox:
                                                                  [0, 0, 1, 0, 0, 0]]))
 
     def test_match_xview(self):
-        matcher = MatchEnginePointInBox('coco')
+        matcher = PointInBoxMatcher('coco')
         assert np.all(matcher.match(detections, gt) == np.array([[0, 0, 0, 0, 0, 0],
                                                                  [0, 0, 0, 0, 0, 1],
                                                                  [0, 0, 0, 0, 1, 0],
@@ -89,7 +89,7 @@ class TestMatchEngineBboxPointInBox:
 
 class TestMatchEngineBboxEuclidean:
     def test_similarity(self, th):
-        matcher = MatchEngineEuclideanDistance(th, 'coco')
+        matcher = EuclideanMatcher(th, 'coco')
         ref_iou = naive_compute_threshold_distance_similarity_matrix(sort_detection_by_confidence(detections), gt, th)
         iou = matcher.compute_similarity_matrix(detections, gt)
         print(iou)
@@ -97,7 +97,7 @@ class TestMatchEngineBboxEuclidean:
         assert np.all(iou[np.logical_not(np.isinf(iou))] == ref_iou[np.logical_not(np.isinf(iou))])
 
     def test_match_coco_at_100(self):
-        matcher = MatchEngineEuclideanDistance(100, 'coco')
+        matcher = EuclideanMatcher(100, 'coco')
         assert np.all(matcher.match(detections, gt) == np.array([[0, 1, 0, 0, 0, 0],
                                                                  [0, 0, 0, 0, 0, 1],
                                                                  [0, 0, 0, 0, 1, 0],
@@ -108,7 +108,7 @@ class TestMatchEngineBboxEuclidean:
                                                                  [0, 0, 0, 0, 0, 0]]))
 
     def test_match_coco_at_150(self):
-        matcher = MatchEngineEuclideanDistance(150, 'coco')
+        matcher = EuclideanMatcher(150, 'coco')
         assert np.all(matcher.match(detections, gt) == np.array([[0, 1, 0, 0, 0, 0],
                                                                  [0, 0, 0, 0, 0, 1],
                                                                  [0, 0, 0, 0, 1, 0],
@@ -119,7 +119,7 @@ class TestMatchEngineBboxEuclidean:
                                                                  [0, 0, 0, 0, 0, 0]]))
 
     def test_match_coco_at_200(self):
-        matcher = MatchEngineEuclideanDistance(200, 'coco')
+        matcher = EuclideanMatcher(200, 'coco')
         assert np.all(matcher.match(detections, gt) == np.array([[0, 1, 0, 0, 0, 0],
                                                                  [0, 0, 0, 0, 0, 1],
                                                                  [0, 0, 0, 0, 1, 0],
@@ -130,7 +130,7 @@ class TestMatchEngineBboxEuclidean:
                                                                  [0, 0, 0, 0, 0, 0]]))
 
     def test_match_xview_at_100(self):
-        matcher = MatchEngineEuclideanDistance(100, 'xview')
+        matcher = EuclideanMatcher(100, 'xview')
         assert np.all(matcher.match(detections, gt) == np.array([[0, 1, 0, 0, 0, 0],
                                                                  [0, 0, 0, 0, 0, 1],
                                                                  [0, 0, 0, 0, 1, 0],
@@ -141,7 +141,7 @@ class TestMatchEngineBboxEuclidean:
                                                                  [0, 0, 1, 0, 0, 0]]))
 
     def test_match_xview_at_150(self):
-        matcher = MatchEngineEuclideanDistance(150, 'xview')
+        matcher = EuclideanMatcher(150, 'xview')
         assert np.all(matcher.match(detections, gt) == np.array([[0, 1, 0, 0, 0, 0],
                                                                  [0, 0, 0, 0, 0, 1],
                                                                  [0, 0, 0, 0, 1, 0],
@@ -152,7 +152,7 @@ class TestMatchEngineBboxEuclidean:
                                                                  [0, 0, 1, 0, 0, 0]]))
 
     def test_match_xview_at_200(self):
-        matcher = MatchEngineEuclideanDistance(200, 'xview')
+        matcher = EuclideanMatcher(200, 'xview')
         assert np.all(matcher.match(detections, gt) == np.array([[0, 1, 0, 0, 0, 0],
                                                                  [0, 0, 0, 0, 0, 1],
                                                                  [0, 0, 0, 0, 1, 0],

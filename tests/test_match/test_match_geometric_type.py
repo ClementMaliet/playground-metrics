@@ -5,8 +5,8 @@ import pytest
 import numpy as np
 from pygeos import box, polygons, points
 
-from playground_metrics.match.engines import MatchEngineIoU, MatchEngineConstantBox, MatchEngineEuclideanDistance, \
-    MatchEnginePointInBox
+from playground_metrics.match.matcher import IntersectionOverUnionMatcher, ConstantBoxMatcher, EuclideanMatcher, \
+    PointInBoxMatcher
 
 
 @contextmanager
@@ -62,25 +62,25 @@ gt_types = (gt_bbox, gt_poly, gt_point, gt_bbox_poly, gt_bbox_point, gt_poly_poi
 
 
 _allowed = {
-    'MatchEngineIoU': (det_bbox, det_poly, gt_bbox, gt_poly, det_bbox_poly, gt_bbox_poly),
-    'MatchEngineConstantBox': (det_bbox, det_poly, det_point, gt_bbox, gt_poly, gt_point,
+    'IntersectionOverUnionMatcher': (det_bbox, det_poly, gt_bbox, gt_poly, det_bbox_poly, gt_bbox_poly),
+    'ConstantBoxMatcher': (det_bbox, det_poly, det_point, gt_bbox, gt_poly, gt_point,
                                det_bbox_poly, det_bbox_point, det_poly_point,
                                gt_bbox_poly, gt_bbox_point, gt_poly_point,
                                det_bbox_poly_point, gt_bbox_poly_point),
-    'MatchEngineEuclideanDistance': (det_bbox, det_poly, det_point, gt_bbox, gt_poly, gt_point,
+    'EuclideanMatcher': (det_bbox, det_poly, det_point, gt_bbox, gt_poly, gt_point,
                                      det_bbox_poly, det_bbox_point, det_poly_point,
                                      gt_bbox_poly, gt_bbox_point, gt_poly_point,
                                      det_bbox_poly_point, gt_bbox_poly_point),
-    'MatchEnginePointInBox': (det_bbox, det_poly, det_point, gt_bbox, gt_poly,
+    'PointInBoxMatcher': (det_bbox, det_poly, det_point, gt_bbox, gt_poly,
                               det_bbox_poly, det_bbox_point, det_poly_point,
                               gt_bbox_poly,
                               det_bbox_poly_point)
 }
 _match_engine_args = {
-    'MatchEngineIoU': (0.5, 'coco'),
-    'MatchEngineConstantBox': (0.5, 'coco', 10),
-    'MatchEngineEuclideanDistance': (10, 'coco'),
-    'MatchEnginePointInBox': ('coco', )
+    'IntersectionOverUnionMatcher': (0.5, 'coco'),
+    'ConstantBoxMatcher': (0.5, 'coco', 10),
+    'EuclideanMatcher': (10, 'coco'),
+    'PointInBoxMatcher': ('coco', )
 }
 
 
@@ -103,13 +103,13 @@ class TestMatchEngineTyping:
                     match_engine.match(det, gt)
 
     def test_iou(self):
-        self._make_type_test(MatchEngineIoU)
+        self._make_type_test(IntersectionOverUnionMatcher)
 
     def test_point(self):
-        self._make_type_test(MatchEngineEuclideanDistance)
+        self._make_type_test(EuclideanMatcher)
 
     def test_point_in_box(self):
-        self._make_type_test(MatchEnginePointInBox)
+        self._make_type_test(PointInBoxMatcher)
 
     def test_constant_box(self):
-        self._make_type_test(MatchEngineConstantBox)
+        self._make_type_test(ConstantBoxMatcher)

@@ -35,7 +35,7 @@ the object pairs which pass the first trim.
   :class:`~playground_metrics.match_detections.MatchEngineEuclideanDistance` is that the first trim checks whether a point
   is within a ground truth footprint to assess a pairs' viability rather than checking if its similarity is above a
   given threshold.
-* :class:`~playground_metrics.match_detections.MatchEngineConstantBox` which works on points (or features' centroid if
+* :class:`~playground_metrics.match_detections.ConstantBoxMatcher` which works on points (or features' centroid if
   given non-point features) and uses a similarity matrix made by assigning a fixed shape `bounding box` to every points
   and computing **intersection-over-union** between those. The first trim then assesses a pairs' viability by checking
   if its similarity is above a given threshold.

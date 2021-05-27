@@ -1,7 +1,7 @@
 # flake8: noqa: F841
 import pytest
 from playground_metrics.map_metric import MeanAveragePrecisionMetric
-from playground_metrics.match.engines import MatchEngine, MatchEngineIoU
+from playground_metrics.match.matcher import Matcher, IntersectionOverUnionMatcher
 import numpy as np
 
 # This breaks th xview equality test because the last gt (class 2) is never counted as a false negative because there
@@ -162,27 +162,27 @@ class TestScoreSynth:
 
 class TestUserMatchEngine:
     def test_match_engine_override(self):
-        class DummyMatchEngine(MatchEngine):
+        class DummyMatcher(Matcher):
             def compute_similarity_matrix(self, detections, ground_truths, label_mean_area=None):
                 pass
 
             def trim_similarity_matrix(self, similarity_matrix, detections, ground_truths, label_mean_area=None):
                 pass
 
-        map = MeanAveragePrecisionMetric(0.5, 'coco', match_engine=DummyMatchEngine('coco'))
+        map = MeanAveragePrecisionMetric(0.5, 'coco', matcher=DummyMatcher('coco'))
 
-        assert isinstance(map.match_engine, DummyMatchEngine)
+        assert isinstance(map.matcher, DummyMatcher)
 
     def test_threshold_property(self):
-        class DummyMatchEngine(MatchEngine):
+        class DummyMatcher(Matcher):
             def compute_similarity_matrix(self, detections, ground_truths, label_mean_area=None):
                 pass
 
             def trim_similarity_matrix(self, similarity_matrix, detections, ground_truths, label_mean_area=None):
                 pass
 
-        map_with_threshold = MeanAveragePrecisionMetric(0.5, 'coco', match_engine=MatchEngineIoU(0.5, 'coco'))
-        map_without_threshold = MeanAveragePrecisionMetric(0.5, 'coco', match_engine=DummyMatchEngine('coco'))
+        map_with_threshold = MeanAveragePrecisionMetric(0.5, 'coco', matcher=IntersectionOverUnionMatcher(0.5, 'coco'))
+        map_without_threshold = MeanAveragePrecisionMetric(0.5, 'coco', matcher=DummyMatcher('coco'))
 
         assert map_with_threshold.threshold == 0.5
         assert map_without_threshold.threshold is None
@@ -192,7 +192,7 @@ class TestUserMatchEngine:
         import warnings
         warnings.filterwarnings("always", category=RuntimeWarning)
 
-        class DummyMatchEngine(MatchEngine):
+        class DummyMatcher(Matcher):
             def compute_similarity_matrix(self, detections, ground_truths, label_mean_area=None):
                 pass
 
@@ -200,15 +200,15 @@ class TestUserMatchEngine:
                 pass
 
         with pytest.warns(RuntimeWarning, match='Discrepancy between user provided threshold'):
-            map_with_threshold = MeanAveragePrecisionMetric(0.1, 'coco', match_engine=MatchEngineIoU(0.5, 'coco'))
+            map_with_threshold = MeanAveragePrecisionMetric(0.1, 'coco', matcher=IntersectionOverUnionMatcher(0.5, 'coco'))
 
         with pytest.warns(RuntimeWarning, match='Discrepancy between user provided threshold'):
-            map_without_threshold = MeanAveragePrecisionMetric(0.1, 'coco', match_engine=DummyMatchEngine('coco'))
+            map_without_threshold = MeanAveragePrecisionMetric(0.1, 'coco', matcher=DummyMatcher('coco'))
 
     @pytest.mark.filterwarnings("always")
     def test_match_algorithm_warning(self):
         with pytest.warns(RuntimeWarning, match='Discrepancy between user provided match_algorithm'):
-            _ = MeanAveragePrecisionMetric(0.5, 'xview', match_engine=MatchEngineIoU(0.5, 'coco'))
+            _ = MeanAveragePrecisionMetric(0.5, 'xview', matcher=IntersectionOverUnionMatcher(0.5, 'coco'))
 
 
 class TestGroundTruthLabel:

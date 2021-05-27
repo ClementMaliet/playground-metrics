@@ -2,7 +2,7 @@ import numpy as np
 from pygeos import area
 from tests.resources.reference_functions import naive_compute_iou_matrix, sort_detection_by_confidence
 
-from playground_metrics.match.engines import MatchEngineIoU
+from playground_metrics.match.matcher import IntersectionOverUnionMatcher
 from playground_metrics.utils.conversion import convert_to_bounding_box
 
 detections = np.concatenate((10 * np.array([[14.5, 0, 26, 5],
@@ -37,7 +37,7 @@ gt_mean_area = area(gt).mean()
 
 class TestMatchEngineBbox:
     def test_rtree_iou_matrix(self):
-        matcher = MatchEngineIoU(0.1, 'coco')
+        matcher = IntersectionOverUnionMatcher(0.1, 'coco')
         ref_iou = naive_compute_iou_matrix(sort_detection_by_confidence(detections), gt)
         iou = matcher.compute_similarity_matrix(detections, gt)
         print(iou)
@@ -45,7 +45,7 @@ class TestMatchEngineBbox:
         assert np.all(iou == ref_iou)
 
     def test_match_non_unitary_at_001(self):
-        matcher = MatchEngineIoU(0.01, 'non-unitary')
+        matcher = IntersectionOverUnionMatcher(0.01, 'non-unitary')
         assert np.all(matcher.match(detections, gt) == np.array([[1, 0, 0, 0, 0, 0],
                                                                  [0, 0, 0, 0, 1, 1],
                                                                  [0, 0, 0, 0, 1, 1],
@@ -56,7 +56,7 @@ class TestMatchEngineBbox:
                                                                  [1, 1, 1, 0, 0, 0]]))
 
     def test_match_non_unitary_at_005(self):
-        matcher = MatchEngineIoU(0.05, 'non-unitary')
+        matcher = IntersectionOverUnionMatcher(0.05, 'non-unitary')
         assert np.all(matcher.match(detections, gt) == np.array([[0, 0, 0, 0, 0, 0],
                                                                  [0, 0, 0, 0, 1, 1],
                                                                  [0, 0, 0, 0, 1, 0],
@@ -67,7 +67,7 @@ class TestMatchEngineBbox:
                                                                  [0, 0, 1, 0, 0, 0]]))
 
     def test_match_non_unitary_at_01(self):
-        matcher = MatchEngineIoU(0.1, 'non-unitary')
+        matcher = IntersectionOverUnionMatcher(0.1, 'non-unitary')
         assert np.all(matcher.match(detections, gt) == np.array([[0, 0, 0, 0, 0, 0],
                                                                  [0, 0, 0, 0, 1, 1],
                                                                  [0, 0, 0, 0, 1, 0],
@@ -78,7 +78,7 @@ class TestMatchEngineBbox:
                                                                  [0, 0, 1, 0, 0, 0]]))
 
     def test_match_coco_at_001(self):
-        matcher = MatchEngineIoU(0.01, 'coco')
+        matcher = IntersectionOverUnionMatcher(0.01, 'coco')
         assert np.all(matcher.match(detections, gt) == np.array([[1, 0, 0, 0, 0, 0],
                                                                  [0, 0, 0, 0, 0, 1],
                                                                  [0, 0, 0, 0, 1, 0],
@@ -89,7 +89,7 @@ class TestMatchEngineBbox:
                                                                  [0, 0, 0, 0, 0, 0]]))
 
     def test_match_coco_at_005(self):
-        matcher = MatchEngineIoU(0.05, 'coco')
+        matcher = IntersectionOverUnionMatcher(0.05, 'coco')
         assert np.all(matcher.match(detections, gt) == np.array([[0, 0, 0, 0, 0, 0],
                                                                  [0, 0, 0, 0, 0, 1],
                                                                  [0, 0, 0, 0, 1, 0],
@@ -100,7 +100,7 @@ class TestMatchEngineBbox:
                                                                  [0, 0, 0, 0, 0, 0]]))
 
     def test_match_coco_at_01(self):
-        matcher = MatchEngineIoU(0.1, 'coco')
+        matcher = IntersectionOverUnionMatcher(0.1, 'coco')
         assert np.all(matcher.match(detections, gt) == np.array([[0, 0, 0, 0, 0, 0],
                                                                  [0, 0, 0, 0, 0, 1],
                                                                  [0, 0, 0, 0, 1, 0],
@@ -111,7 +111,7 @@ class TestMatchEngineBbox:
                                                                  [0, 0, 1, 0, 0, 0]]))
 
     def test_match_xview_at_001(self):
-        matcher = MatchEngineIoU(0.01, 'xview')
+        matcher = IntersectionOverUnionMatcher(0.01, 'xview')
         assert np.all(matcher.match(detections, gt) == np.array([[1, 0, 0, 0, 0, 0],
                                                                  [0, 0, 0, 0, 0, 1],
                                                                  [0, 0, 0, 0, 1, 0],
@@ -122,7 +122,7 @@ class TestMatchEngineBbox:
                                                                  [0, 0, 1, 0, 0, 0]]))
 
     def test_match_xview_at_005(self):
-        matcher = MatchEngineIoU(0.05, 'xview')
+        matcher = IntersectionOverUnionMatcher(0.05, 'xview')
         assert np.all(matcher.match(detections, gt) == np.array([[0, 0, 0, 0, 0, 0],
                                                                  [0, 0, 0, 0, 0, 1],
                                                                  [0, 0, 0, 0, 1, 0],
@@ -133,7 +133,7 @@ class TestMatchEngineBbox:
                                                                  [0, 0, 1, 0, 0, 0]]))
 
     def test_match_xview_at_01(self):
-        matcher = MatchEngineIoU(0.1, 'xview')
+        matcher = IntersectionOverUnionMatcher(0.1, 'xview')
         assert np.all(matcher.match(detections, gt) == np.array([[0, 0, 0, 0, 0, 0],
                                                                  [0, 0, 0, 0, 0, 1],
                                                                  [0, 0, 0, 0, 1, 0],
@@ -146,7 +146,7 @@ class TestMatchEngineBbox:
 
 class TestMatchEngineBboxIIoU:
     def test_rtree_iou_matrix(self):
-        matcher = MatchEngineIoU(0.1, 'coco')
+        matcher = IntersectionOverUnionMatcher(0.1, 'coco')
         ref_iou = naive_compute_iou_matrix(sort_detection_by_confidence(detections), gt) * \
             (gt_mean_area / area(gt[:, 0]))
         iou = matcher.compute_similarity_matrix(detections, gt, label_mean_area=gt_mean_area)
@@ -155,7 +155,7 @@ class TestMatchEngineBboxIIoU:
         assert np.all(iou[np.logical_not(np.isinf(iou))] == ref_iou[np.logical_not(np.isinf(iou))])
 
     def test_match_coco_at_001(self):
-        matcher = MatchEngineIoU(0.01, 'coco')
+        matcher = IntersectionOverUnionMatcher(0.01, 'coco')
         assert np.all(matcher.match(detections, gt, label_mean_area=gt_mean_area) == np.array([[1, 0, 0, 0, 0, 0],
                                                                                                [0, 0, 0, 0, 0, 1],
                                                                                                [0, 0, 0, 0, 1, 0],
@@ -166,7 +166,7 @@ class TestMatchEngineBboxIIoU:
                                                                                                [0, 0, 0, 0, 0, 0]]))
 
     def test_match_coco_at_005(self):
-        matcher = MatchEngineIoU(0.05, 'coco')
+        matcher = IntersectionOverUnionMatcher(0.05, 'coco')
         assert np.all(matcher.match(detections, gt, label_mean_area=gt_mean_area) == np.array([[0, 0, 0, 0, 0, 0],
                                                                                                [0, 0, 0, 0, 0, 1],
                                                                                                [0, 0, 0, 0, 1, 0],
@@ -177,7 +177,7 @@ class TestMatchEngineBboxIIoU:
                                                                                                [0, 0, 0, 0, 0, 0]]))
 
     def test_match_coco_at_01(self):
-        matcher = MatchEngineIoU(0.1, 'coco')
+        matcher = IntersectionOverUnionMatcher(0.1, 'coco')
         assert np.all(matcher.match(detections, gt, label_mean_area=gt_mean_area) == np.array([[0, 0, 0, 0, 0, 0],
                                                                                                [0, 0, 0, 0, 0, 1],
                                                                                                [0, 0, 0, 0, 1, 0],
@@ -188,7 +188,7 @@ class TestMatchEngineBboxIIoU:
                                                                                                [0, 0, 0, 0, 0, 0]]))
 
     def test_match_xview_at_001(self):
-        matcher = MatchEngineIoU(0.01, 'xview')
+        matcher = IntersectionOverUnionMatcher(0.01, 'xview')
         assert np.all(matcher.match(detections, gt, label_mean_area=gt_mean_area) == np.array([[1, 0, 0, 0, 0, 0],
                                                                                                [0, 0, 0, 0, 0, 1],
                                                                                                [0, 0, 0, 0, 1, 0],
@@ -199,7 +199,7 @@ class TestMatchEngineBboxIIoU:
                                                                                                [0, 0, 0, 0, 0, 0]]))
 
     def test_match_xview_at_005(self):
-        matcher = MatchEngineIoU(0.05, 'xview')
+        matcher = IntersectionOverUnionMatcher(0.05, 'xview')
         assert np.all(matcher.match(detections, gt, label_mean_area=gt_mean_area) == np.array([[0, 0, 0, 0, 0, 0],
                                                                                                [0, 0, 0, 0, 0, 1],
                                                                                                [0, 0, 0, 0, 1, 0],
@@ -210,7 +210,7 @@ class TestMatchEngineBboxIIoU:
                                                                                                [0, 0, 0, 0, 0, 0]]))
 
     def test_match_xview_at_01(self):
-        matcher = MatchEngineIoU(0.1, 'xview')
+        matcher = IntersectionOverUnionMatcher(0.1, 'xview')
         assert np.all(matcher.match(detections, gt, label_mean_area=gt_mean_area) == np.array([[0, 0, 0, 0, 0, 0],
                                                                                                [0, 0, 0, 0, 0, 1],
                                                                                                [0, 0, 0, 0, 1, 0],

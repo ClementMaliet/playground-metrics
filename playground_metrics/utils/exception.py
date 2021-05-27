@@ -7,7 +7,7 @@ class MapMetricApiError(Exception):
 
 # Match detections exceptions
 class MatchEngineError(MapMetricApiError):
-    r"""Generic exception class for MatchEngine specific exceptions."""
+    r"""Generic exception class for Matcher specific exceptions."""
 
     pass
 

@@ -13,7 +13,7 @@ from collections import defaultdict
 import numpy as np
 
 from .utils import to_builtin, to_list
-from playground_metrics.match.engines import MatchEngineIoU
+from playground_metrics.match.matcher import IntersectionOverUnionMatcher
 from .utils.conversion import get_type_and_convert
 
 
@@ -44,10 +44,10 @@ class MeanAveragePrecisionMetric:
         autocorrect_invalid_geometry (Bool): Optional, default to ``False``. Whether to attempt correcting a faulty
             geometry to form a valid one. If set to ``True`` and the autocorrect attempt is unsuccessful, it falls back
             to the behaviour defined in ``trim_invalid_geometry``.
-        match_engine (:class:`~map_metric_api.match_detections.MatchEngine`): Optional, default to
-            :class:`~playground_metrics.match_detections.MatchEngineIoU`. If provided matching will be done using the
-            provided ``match_engine`` instead of the default one. Note that the ``threshold`` and ``match_algorithm``
-            provided parameters will be overridden by those provided in the ``match_engine``.
+        matcher (:class:`~map_metric_api.match_detections.Matcher`): Optional, default to
+            :class:`~playground_metrics.match_detections.IntersectionOverUnionMatcher`. If provided matching will be done using the
+            provided ``matcher`` instead of the default one. Note that the ``threshold`` and ``match_algorithm``
+            provided parameters will be overridden by those provided in the ``matcher``.
 
     Warning:
         When using non-unitary matching, the AP per class and the mAP are ill-defined and must be taken with a grain
@@ -56,7 +56,7 @@ class MeanAveragePrecisionMetric:
     Warns:
         UserWarning: If ``match_algorithm`` is 'non-unitary' to warn that mAP and AP per class values are
             ill-defined.
-        RuntimeWarning: If a ``match_engine`` is provided and its ``threshold`` or ``match_algorithm``
+        RuntimeWarning: If a ``matcher`` is provided and its ``threshold`` or ``match_algorithm``
             attribute differs from those provided as arguments to the constructor.
 
     Note:
@@ -80,31 +80,31 @@ class MeanAveragePrecisionMetric:
             constructed by :meth:`compute` from accumulated values
         number_missed_ground_truth_per_class (defaultdict): The number of ground truth not matched to a detection as
             constructed by :meth:`compute` from accumulated values
-        match_engine (:class:`~map_metric_api.match_detections.MatchEngine`) : The match_engine object used to match
+        matcher (:class:`~map_metric_api.match_detections.Matcher`) : The matcher object used to match
             detections and ground truths. If none where provided in the constructor call, it defaults to
-            :class:`~playground_metrics.match_detections.MatchEngineIoU`.
+            :class:`~playground_metrics.match_detections.IntersectionOverUnionMatcher`.
 
     """
 
     def __init__(self, threshold=None, match_algorithm=None, label_mean_area=None, trim_invalid_geometry=False,
-                 autocorrect_invalid_geometry=False, match_engine=None):
+                 autocorrect_invalid_geometry=False, matcher=None):
 
-        if match_engine is not None and (threshold is not None or match_algorithm is not None):
-            warnings.warn('In the future match_engine will be made incompatible with threshold and match_algorithm. '
+        if matcher is not None and (threshold is not None or match_algorithm is not None):
+            warnings.warn('In the future matcher will be made incompatible with threshold and match_algorithm. '
                           'Providing both will raise a ValueError.', FutureWarning)
 
         # Set configurations values
         threshold = threshold if threshold is not None else 0.5
         match_algorithm = match_algorithm or 'coco'
-        self.match_engine = match_engine or MatchEngineIoU(threshold, match_algorithm)
+        self.matcher = matcher or IntersectionOverUnionMatcher(threshold, match_algorithm)
         if threshold != self.threshold:
             warnings.warn('Discrepancy between user provided threshold and '
-                          'match_engine threshold ({} != {})'.format(threshold, self.threshold), RuntimeWarning)
+                          'matcher threshold ({} != {})'.format(threshold, self.threshold), RuntimeWarning)
 
-        if match_algorithm != self.match_engine.match_algorithm:
+        if match_algorithm != self.matcher.match_algorithm:
             warnings.warn('Discrepancy between user provided match_algorithm and '
-                          'match_engine match_algorithm ({} != {})'.format(match_algorithm,
-                                                                           self.match_engine.match_algorithm),
+                          'matcher match_algorithm ({} != {})'.format(match_algorithm,
+                                                                      self.matcher.match_algorithm),
                           RuntimeWarning)
 
         if match_algorithm == 'non-unitary':
@@ -119,11 +119,11 @@ class MeanAveragePrecisionMetric:
 
     @property
     def threshold(self):  # noqa: D205,D400
-        """float: The IoU threshold by :attr:`self.match_engine <match_engine>` or ``None``
-        if :attr:`self.match_engine <match_engine>` doesn't use any threshold.
+        """float: The IoU threshold by :attr:`self.matcher <matcher>` or ``None``
+        if :attr:`self.matcher <matcher>` doesn't use any threshold.
         """
         try:
-            return self.match_engine.threshold
+            return self.matcher.threshold
         except AttributeError:
             return None
 
@@ -175,8 +175,8 @@ class MeanAveragePrecisionMetric:
             KeyError : If ``self.label_mean_area`` is not ``None`` but a label is missing
 
         The input detections and ground truths are allowed to be **points** in the documentation.
-        This is to allow the use of a custom `MatchEngine` for points, however, the default
-        :class:`~playground_metrics.match_detections.MatchEngineIoU` works on **intersection-over-union** which
+        This is to allow the use of a custom `Matcher` for points, however, the default
+        :class:`~playground_metrics.match_detections.IntersectionOverUnionMatcher` works on **intersection-over-union** which
         is incompatible with **points**. More information on input geometrical types can be found in
         :doc:`playground_metrics.match_detections`.
 
@@ -199,7 +199,7 @@ class MeanAveragePrecisionMetric:
                 self._ground_truth_matched[ground_truth_label] = \
                     np.concatenate((self._ground_truth_matched[ground_truth_label],
                                     np.zeros((ground_truths[to_builtin(ground_truths[:, 1]) == ground_truth_label,
-                                                            :].shape[0]))))
+                                              :].shape[0]))))
             return
 
         if ground_truths.size == 0:
@@ -224,9 +224,9 @@ class MeanAveragePrecisionMetric:
                 mean_area = None
 
             match_matrix = \
-                self.match_engine.match(detections[to_builtin(detections[:, 2]) == ground_truth_label, :2],
-                                        ground_truths[to_builtin(ground_truths[:, 1]) == ground_truth_label, :1],
-                                        label_mean_area=mean_area)
+                self.matcher.match(detections[to_builtin(detections[:, 2]) == ground_truth_label, :2],
+                                   ground_truths[to_builtin(ground_truths[:, 1]) == ground_truth_label, :1],
+                                   label_mean_area=mean_area)
 
             # Having this before checking if there were detections for this particular class breaks the xview score
             # equality test, however this is the way to go to ensure that False-Negative are correctly accounted for

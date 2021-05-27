@@ -1,6 +1,6 @@
 import numpy as np
 
-from ..match.engines import MatchEngineIoU
+from ..match.matcher import IntersectionOverUnionMatcher
 
 
 def add_confidence_from_max_iou(detections, ground_truths):
@@ -58,7 +58,7 @@ def add_confidence_from_max_iou(detections, ground_truths):
                 0.09375]], dtype=object)
 
     """
-    match_engine = MatchEngineIoU(0.5, 'coco')
+    match_engine = IntersectionOverUnionMatcher(0.5, 'coco')
     iou = match_engine.compute_similarity_matrix(np.insert(detections, 1, np.linspace(1, 0,
                                                                                       detections.shape[0]), axis=1),
                                                  ground_truths)

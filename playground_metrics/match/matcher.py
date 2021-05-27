@@ -43,7 +43,7 @@ class MatchAlgorithm(Enum):
         return self.value(*args, **kwargs)
 
 
-class MatchEngine(ABC):
+class Matcher(ABC):
     """Match detection with their ground truth according a similarity matrix and a detection confidence score.
 
     Matching may be done using coco algorithm or xView algorithm (which yield different matches as described for an
@@ -70,7 +70,7 @@ class MatchEngine(ABC):
         self._ground_truth_types = (GeometryType.POLYGON, GeometryType.POINT)
 
     def __repr__(self):
-        """Represent the :class:`~playground_metrics.match_detections.MatchEngine` as a string."""
+        """Represent the :class:`~playground_metrics.match_detections.Matcher` as a string."""
         d_arg = []
         for arg in ['threshold', 'match_algorithm', 'bounding_box_size']:
             if hasattr(self, arg):
@@ -78,12 +78,12 @@ class MatchEngine(ABC):
         return '{}({})'.format(self.__class__.__name__, ', '.join(d_arg))
 
     def __str__(self):
-        """Represent the :class:`~playground_metrics.match_detections.MatchEngine` as a string."""
+        """Represent the :class:`~playground_metrics.match_detections.Matcher` as a string."""
         d_arg = []
         for arg in ['threshold', 'match_algorithm', 'bounding_box_size']:
             if hasattr(self, arg):
                 d_arg.append('{}={}'.format(arg, self.__getattribute__(arg)))
-        return '{}({})'.format(self.__class__.__name__.replace('MatchEngine', ''), ', '.join(d_arg))
+        return '{}({})'.format(self.__class__.__name__.replace('Matcher', ''), ', '.join(d_arg))
 
     def _compute_similarity_matrix_and_trim(self, detections, ground_truths, label_mean_area=None):
         similarity_matrix = self.compute_similarity_matrix(detections, ground_truths, label_mean_area)
@@ -228,8 +228,10 @@ class MatchEngine(ABC):
             raise ValueError('Invalid match algorithm: '
                              'Expected one of ({})'.format(', '.join(MatchAlgorithm.__members__.keys()))) from error
 
+    __call__ = match
 
-class MatchEngineIoU(MatchEngine):
+
+class IntersectionOverUnionMatcher(Matcher):
     """Match detection with their ground truth according the their IoU and the detection confidence score.
 
     Args:
@@ -239,7 +241,7 @@ class MatchEngineIoU(MatchEngine):
     """
 
     def __init__(self, threshold, match_algorithm):
-        super(MatchEngineIoU, self).__init__(match_algorithm)
+        super(IntersectionOverUnionMatcher, self).__init__(match_algorithm)
 
         self._detection_types = (GeometryType.POLYGON, )
         self._ground_truth_types = (GeometryType.POLYGON, )
@@ -312,7 +314,7 @@ class MatchEngineIoU(MatchEngine):
         return res[:, np.argsort(np.nonzero(similarity_matrix >= self.threshold)[0])]
 
 
-class MatchEngineEuclideanDistance(MatchEngine):
+class EuclideanMatcher(Matcher):
     """Match detection with their ground truth according the their relative distance and the detection confidence score.
 
     Args:
@@ -322,7 +324,7 @@ class MatchEngineEuclideanDistance(MatchEngine):
     """
 
     def __init__(self, threshold, match_algorithm):
-        super(MatchEngineEuclideanDistance, self).__init__(match_algorithm)
+        super(EuclideanMatcher, self).__init__(match_algorithm)
         self._threshold = 1 - threshold
 
     @property
@@ -333,7 +335,7 @@ class MatchEngineEuclideanDistance(MatchEngine):
     def compute_similarity_matrix(self, detections, ground_truths, label_mean_area=None):
         r"""Compute a partial similarity matrix based on the euclidean distance between all pairs of points.
 
-        The difference with :class:`~playground_metrics.match_detections.MatchEnginePointInBox` lies in the
+        The difference with :class:`~playground_metrics.match_detections.PointInBoxMatcher` lies in the
         similarity matrix rough trimming which depends on a threshold rather than on whether a detection (as a point)
         lies within a ground truth polygon (or bounding box).
 
@@ -415,7 +417,7 @@ class MatchEngineEuclideanDistance(MatchEngine):
         return res[:, np.argsort(np.nonzero(similarity_matrix >= self._threshold)[0])]
 
 
-class MatchEnginePointInBox(MatchEngine):  # noqa: D205,D400
+class PointInBoxMatcher(Matcher):  # noqa: D205,D400
     """Match detection with their ground truth according the their relative distance, whether a detection point is in a
     ground truth box and the detection confidence score.
 
@@ -425,7 +427,7 @@ class MatchEnginePointInBox(MatchEngine):  # noqa: D205,D400
     """
 
     def __init__(self, match_algorithm):
-        super(MatchEnginePointInBox, self).__init__(match_algorithm)
+        super(PointInBoxMatcher, self).__init__(match_algorithm)
 
         self._ground_truth_types = (GeometryType.POLYGON, )
 
@@ -433,7 +435,7 @@ class MatchEnginePointInBox(MatchEngine):  # noqa: D205,D400
         r"""Compute a partial similarity matrix based on the euclidean distance between all pairs of points with an
         Rtree on detections to speed up computation.
 
-        The difference with :class:`~playground_metrics.match_detections.MatchEngineEuclideanDistance` lies in the
+        The difference with :class:`~playground_metrics.match_detections.EuclideanMatcher` lies in the
         similarity matrix rough trimming which depends on whether a detection (as a point) lies within a ground truth
         polygon (or bounding box) rather than on a threshold.
 
@@ -517,7 +519,7 @@ class MatchEnginePointInBox(MatchEngine):  # noqa: D205,D400
         return np.delete(potential, trim, axis=1)
 
 
-class MatchEngineConstantBox(MatchEngineIoU):  # noqa: D205,D400
+class ConstantBoxMatcher(IntersectionOverUnionMatcher):  # noqa: D205,D400
     """Match detection with their ground truth according the IoU computed on fixed-size
     bounding boxes around detection and ground truth points and the detection confidence score.
 
@@ -529,7 +531,7 @@ class MatchEngineConstantBox(MatchEngineIoU):  # noqa: D205,D400
     """
 
     def __init__(self, threshold, match_algorithm, bounding_box_size):
-        super(MatchEngineConstantBox, self).__init__(threshold, match_algorithm)
+        super(ConstantBoxMatcher, self).__init__(threshold, match_algorithm)
         self.bounding_box_size = bounding_box_size
 
         # Override authorized geometric types fot this match engine
@@ -573,6 +575,6 @@ class MatchEngineConstantBox(MatchEngineIoU):  # noqa: D205,D400
                                      width=self.bounding_box_size,
                                      height=self.bounding_box_size)[:, None]
 
-        return super(MatchEngineConstantBox, self).compute_similarity_matrix(detections,
-                                                                             ground_truths,
-                                                                             label_mean_area)
+        return super(ConstantBoxMatcher, self).compute_similarity_matrix(detections,
+                                                                         ground_truths,
+                                                                         label_mean_area)

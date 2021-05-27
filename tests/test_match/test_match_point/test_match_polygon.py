@@ -5,8 +5,8 @@ from tests.resources.reference_functions import bbox_to_polygon, sort_detection_
     naive_compute_threshold_distance_similarity_matrix
 from tests.test_match.test_match_point.test_match_bbox import detections, gt
 
-from playground_metrics.match.engines import MatchEnginePointInBox, MatchEngineConstantBox, \
-    MatchEngineEuclideanDistance
+from playground_metrics.match.matcher import PointInBoxMatcher, ConstantBoxMatcher, \
+    EuclideanMatcher
 
 detections = np.array([[bbox_to_polygon(detections[i, :]), detections[i, 1]] for i in range(detections.shape[0])])
 gt = np.array([[bbox_to_polygon(gt[i, :])] for i in range(gt.shape[0])])
@@ -19,7 +19,7 @@ def th(request):
 
 class TestMatchEnginePolygonConstantBox:
     def test_similarity(self, th):
-        matcher = MatchEngineConstantBox(0.5, 'coco', th)
+        matcher = ConstantBoxMatcher(0.5, 'coco', th)
         ref_iou = naive_compute_constant_box_similarity_matrix(sort_detection_by_confidence(detections), gt, th)
         iou = matcher.compute_similarity_matrix(detections, gt)
         print(iou)
@@ -29,7 +29,7 @@ class TestMatchEnginePolygonConstantBox:
 
 class TestMatchEnginePolygonPointInBox:
     def test_similarity(self):
-        matcher = MatchEnginePointInBox('coco')
+        matcher = PointInBoxMatcher('coco')
         ref_iou = naive_compute_point_in_box_distance_similarity_matrix(sort_detection_by_confidence(detections), gt)
         iou = matcher.compute_similarity_matrix(detections, gt)
         print(iou)
@@ -37,7 +37,7 @@ class TestMatchEnginePolygonPointInBox:
         assert np.all(iou[np.logical_not(np.isinf(iou))] == ref_iou[np.logical_not(np.isinf(iou))])
 
     def test_match_coco(self):
-        matcher = MatchEnginePointInBox('coco')
+        matcher = PointInBoxMatcher('coco')
         assert np.all(matcher.match(detections, gt) == np.array([[0, 0, 0, 0, 0, 0],
                                                                  [0, 0, 0, 0, 0, 1],
                                                                  [0, 0, 0, 0, 1, 0],
@@ -48,7 +48,7 @@ class TestMatchEnginePolygonPointInBox:
                                                                  [0, 0, 1, 0, 0, 0]]))
 
     def test_match_xview(self):
-        matcher = MatchEnginePointInBox('coco')
+        matcher = PointInBoxMatcher('coco')
         assert np.all(matcher.match(detections, gt) == np.array([[0, 0, 0, 0, 0, 0],
                                                                  [0, 0, 0, 0, 0, 1],
                                                                  [0, 0, 0, 0, 1, 0],
@@ -61,7 +61,7 @@ class TestMatchEnginePolygonPointInBox:
 
 class TestMatchEnginePolygonEuclidean:
     def test_similarity(self, th):
-        matcher = MatchEngineEuclideanDistance(th, 'coco')
+        matcher = EuclideanMatcher(th, 'coco')
         ref_iou = naive_compute_threshold_distance_similarity_matrix(sort_detection_by_confidence(detections), gt, th)
         iou = matcher.compute_similarity_matrix(detections, gt)
         print(iou)
@@ -69,7 +69,7 @@ class TestMatchEnginePolygonEuclidean:
         assert np.all(iou[np.logical_not(np.isinf(iou))] == ref_iou[np.logical_not(np.isinf(iou))])
 
     def test_match_coco_at_100(self):
-        matcher = MatchEngineEuclideanDistance(100, 'coco')
+        matcher = EuclideanMatcher(100, 'coco')
         assert np.all(matcher.match(detections, gt) == np.array([[0, 1, 0, 0, 0, 0],
                                                                  [0, 0, 0, 0, 0, 1],
                                                                  [0, 0, 0, 0, 1, 0],
@@ -80,7 +80,7 @@ class TestMatchEnginePolygonEuclidean:
                                                                  [0, 0, 0, 0, 0, 0]]))
 
     def test_match_coco_at_150(self):
-        matcher = MatchEngineEuclideanDistance(150, 'coco')
+        matcher = EuclideanMatcher(150, 'coco')
         assert np.all(matcher.match(detections, gt) == np.array([[0, 1, 0, 0, 0, 0],
                                                                  [0, 0, 0, 0, 0, 1],
                                                                  [0, 0, 0, 0, 1, 0],
@@ -91,7 +91,7 @@ class TestMatchEnginePolygonEuclidean:
                                                                  [0, 0, 0, 0, 0, 0]]))
 
     def test_match_coco_at_200(self):
-        matcher = MatchEngineEuclideanDistance(200, 'coco')
+        matcher = EuclideanMatcher(200, 'coco')
         assert np.all(matcher.match(detections, gt) == np.array([[0, 1, 0, 0, 0, 0],
                                                                  [0, 0, 0, 0, 0, 1],
                                                                  [0, 0, 0, 0, 1, 0],
@@ -102,7 +102,7 @@ class TestMatchEnginePolygonEuclidean:
                                                                  [0, 0, 0, 0, 0, 0]]))
 
     def test_match_xview_at_100(self):
-        matcher = MatchEngineEuclideanDistance(100, 'xview')
+        matcher = EuclideanMatcher(100, 'xview')
         assert np.all(matcher.match(detections, gt) == np.array([[0, 1, 0, 0, 0, 0],
                                                                  [0, 0, 0, 0, 0, 1],
                                                                  [0, 0, 0, 0, 1, 0],
@@ -113,7 +113,7 @@ class TestMatchEnginePolygonEuclidean:
                                                                  [0, 0, 1, 0, 0, 0]]))
 
     def test_match_xview_at_150(self):
-        matcher = MatchEngineEuclideanDistance(150, 'xview')
+        matcher = EuclideanMatcher(150, 'xview')
         assert np.all(matcher.match(detections, gt) == np.array([[0, 1, 0, 0, 0, 0],
                                                                  [0, 0, 0, 0, 0, 1],
                                                                  [0, 0, 0, 0, 1, 0],
@@ -124,7 +124,7 @@ class TestMatchEnginePolygonEuclidean:
                                                                  [0, 0, 1, 0, 0, 0]]))
 
     def test_match_xview_at_200(self):
-        matcher = MatchEngineEuclideanDistance(200, 'xview')
+        matcher = EuclideanMatcher(200, 'xview')
         assert np.all(matcher.match(detections, gt) == np.array([[0, 1, 0, 0, 0, 0],
                                                                  [0, 0, 0, 0, 0, 1],
                                                                  [0, 0, 0, 0, 1, 0],
