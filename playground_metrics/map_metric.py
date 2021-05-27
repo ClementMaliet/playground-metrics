@@ -90,22 +90,13 @@ class MeanAveragePrecisionMetric:
                  autocorrect_invalid_geometry=False, matcher=None):
 
         if matcher is not None and (threshold is not None or match_algorithm is not None):
-            warnings.warn('In the future matcher will be made incompatible with threshold and match_algorithm. '
-                          'Providing both will raise a ValueError.', FutureWarning)
+            raise ValueError('Providing both a matcher and either a threshold or a match_algorithm is forbidden '
+                             'as these options or incompatible.')
 
         # Set configurations values
         threshold = threshold if threshold is not None else 0.5
         match_algorithm = match_algorithm or 'coco'
         self.matcher = matcher or IntersectionOverUnionMatcher(threshold, match_algorithm)
-        if threshold != self.threshold:
-            warnings.warn('Discrepancy between user provided threshold and '
-                          'matcher threshold ({} != {})'.format(threshold, self.threshold), RuntimeWarning)
-
-        if match_algorithm != self.matcher.match_algorithm:
-            warnings.warn('Discrepancy between user provided match_algorithm and '
-                          'matcher match_algorithm ({} != {})'.format(match_algorithm,
-                                                                      self.matcher.match_algorithm),
-                          RuntimeWarning)
 
         if match_algorithm == 'non-unitary':
             warnings.warn('When using non-unitary matching, the AP per class and the mAP are '
@@ -118,10 +109,8 @@ class MeanAveragePrecisionMetric:
         self._init_values()
 
     @property
-    def threshold(self):  # noqa: D205,D400
-        """float: The IoU threshold by :attr:`self.matcher <matcher>` or ``None``
-        if :attr:`self.matcher <matcher>` doesn't use any threshold.
-        """
+    def threshold(self):
+        """float: The threshold used by :attr:`self.matcher` or ``None`` if :attr:`self.matcher` doesn't use any."""
         try:
             return self.matcher.threshold
         except AttributeError:
