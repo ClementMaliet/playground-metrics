@@ -5,7 +5,7 @@ import pytest
 import numpy as np
 from pygeos import box, polygons, points
 
-from playground_metrics.match_detections import MatchEngineIoU, MatchEngineConstantBox, MatchEngineEuclideanDistance, \
+from playground_metrics.match.engines import MatchEngineIoU, MatchEngineConstantBox, MatchEngineEuclideanDistance, \
     MatchEnginePointInBox
 
 

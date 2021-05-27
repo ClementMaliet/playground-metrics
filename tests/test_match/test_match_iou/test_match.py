@@ -11,7 +11,7 @@ from tests.test_match.test_match_iou.test_match_polygon import gt as gt_poly
 from tests.test_match.test_match_iou.test_match_polygon import detections as detections_corr_poly
 from tests.test_match.test_match_iou.test_match_polygon import gt as gt_corr_poly
 
-from playground_metrics.match_detections import MatchEngineIoU, MatchEngineBase
+from playground_metrics.match.engines import MatchEngineIoU, MatchEngine
 from playground_metrics.utils.conversion import convert_to_bounding_box
 
 
@@ -20,7 +20,7 @@ class TestMatch:
     def test_metaclass(self):
 
         with raises(TypeError):
-            MatchEngineBase('coco')
+            MatchEngine('coco')
 
     def test_rtree_iou_matrix(self):
         matcher_poly = MatchEngineIoU(0.1, 'coco')

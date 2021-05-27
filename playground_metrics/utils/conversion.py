@@ -5,7 +5,7 @@ from pygeos import polygons, points, box, is_valid, make_valid, get_num_geometri
 
 
 # Helpers functions
-from playground_metrics.utils.geometry import is_type, GeometryType
+from ..match.geometry import is_type, GeometryType
 
 
 def get_type_and_convert(input_array, trim_invalid_geometry=False, autocorrect_invalid_geometry=False):

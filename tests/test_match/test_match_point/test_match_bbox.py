@@ -5,7 +5,7 @@ from tests.resources.reference_functions import naive_compute_threshold_distance
     sort_detection_by_confidence, naive_compute_point_in_box_distance_similarity_matrix, \
     naive_compute_constant_box_similarity_matrix
 
-from playground_metrics.match_detections import MatchEngineEuclideanDistance, MatchEnginePointInBox, \
+from playground_metrics.match.engines import MatchEngineEuclideanDistance, MatchEnginePointInBox, \
     MatchEngineConstantBox
 from playground_metrics.utils.conversion import convert_to_bounding_box
 

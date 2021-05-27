@@ -14,11 +14,11 @@ eliminate obviously non-pairable elements.
 .. seealso::
     The full matching documentation section: :ref:`matching`.
 
-The **abstract** class :class:`~playground_metrics.match_detections.MatchEngineBase` defines the template for every
+The **abstract** class :class:`~playground_metrics.match_detections.MatchEngine` defines the template for every
 ``MatchEngine``  and implements the 3 matching algorithms used (c.f. :ref:`match`). Subclasses
-implements the :meth:`~playground_metrics.match_detections.MatchEngineBase.compute_similarity_matrix` method which computes
+implements the :meth:`~playground_metrics.match_detections.MatchEngine.compute_similarity_matrix` method which computes
 a similarity matrix from ever pairs of elements possible and the
-:meth:`~playground_metrics.match_detections.MatchEngineBase.trim_similarity_matrix` method which computes the indices of
+:meth:`~playground_metrics.match_detections.MatchEngine.trim_similarity_matrix` method which computes the indices of
 the object pairs which pass the first trim.
 
 4 ``MatchEngine`` are implemented in this module:

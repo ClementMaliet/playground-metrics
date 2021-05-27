@@ -5,7 +5,7 @@ from tests.resources.reference_functions import bbox_to_polygon, sort_detection_
     naive_compute_threshold_distance_similarity_matrix
 from tests.test_match.test_match_point.test_match_bbox import detections, gt
 
-from playground_metrics.match_detections import MatchEnginePointInBox, MatchEngineConstantBox, \
+from playground_metrics.match.engines import MatchEnginePointInBox, MatchEngineConstantBox, \
     MatchEngineEuclideanDistance
 
 detections = np.array([[bbox_to_polygon(detections[i, :]), detections[i, 1]] for i in range(detections.shape[0])])

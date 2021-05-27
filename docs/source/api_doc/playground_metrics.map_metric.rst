@@ -10,10 +10,10 @@ whether a particular detection counts as a **False Positive** or **True Positive
 algorithms provided, please see :ref:`match`.
 
 By default, :class:`~playground_metrics.map_metric.MeanAveragePrecisionMetric` expects either `bounding boxes` or `polygons`
-but this may be overridden by providing a `user-instantiated` :class:`~playground_metrics.match_detections.MatchEngineBase`
-subclasses (If no :class:`~playground_metrics.match_detections.MatchEngineBase` is provided, a default
+but this may be overridden by providing a `user-instantiated` :class:`~playground_metrics.match_detections.MatchEngine`
+subclasses (If no :class:`~playground_metrics.match_detections.MatchEngine` is provided, a default
 :class:`~playground_metrics.match_detections.MatchEngineIoU` is created upon instantiation).
-More information on other possible :class:`~playground_metrics.match_detections.MatchEngineBase`, please see
+More information on other possible :class:`~playground_metrics.match_detections.MatchEngine`, please see
 :doc:`playground_metrics.match_detections`.
 
 .. note::

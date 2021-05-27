@@ -5,7 +5,7 @@ import numpy as np
 from numpy.random import randn
 from pygeos import polygons, box, points, apply
 
-from playground_metrics.utils.geometry import intersection_over_union, euclidean_distance
+from playground_metrics.match.geometry import intersection_over_union, euclidean_distance
 
 
 class _TestSimilarity:

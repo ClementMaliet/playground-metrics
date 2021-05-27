@@ -27,7 +27,7 @@ similarity matrix :math:`\hat{\mathcal{S}} = \mathcal{S} \circ \Delta`
 where :math:`\Delta = (\delta_{i, j})` is :math:`0` on trimmed potential
 match and :math:`1` elsewhere and :math:`\circ` is the *Hadamard product*.
 
-All these operations are performed by a :class:`~playground_metrics.match_detections.MatchEngineBase` object.
+All these operations are performed by a :class:`~playground_metrics.match_detections.MatchEngine` object.
 
 .. _compute-sym:
 
@@ -406,4 +406,3 @@ Lecture Notes in Computer Science, vol 10115.* Springer, Cham.
 https://link.springer.com/chapter/10.1007%2F978-3-319-54193-8_13
 
 .. |ap_compute| image:: _static/incremental_PR_metric.png
-

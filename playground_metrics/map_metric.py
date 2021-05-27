@@ -5,6 +5,7 @@ For more in formation on how the metric is computed, see: :doc:`../content/map_m
 If one wants to integrate the module into a framework to use it as a validation metric, the
 :class:`~MeanAveragePrecisionMetric` class described below should be wrappped accordingly to follow the framework
 convention.
+
 """
 import warnings
 from collections import defaultdict
@@ -12,7 +13,7 @@ from collections import defaultdict
 import numpy as np
 
 from .utils import to_builtin, to_list
-from .match_detections import MatchEngineIoU
+from playground_metrics.match.engines import MatchEngineIoU
 from .utils.conversion import get_type_and_convert
 
 
@@ -43,7 +44,7 @@ class MeanAveragePrecisionMetric:
         autocorrect_invalid_geometry (Bool): Optional, default to ``False``. Whether to attempt correcting a faulty
             geometry to form a valid one. If set to ``True`` and the autocorrect attempt is unsuccessful, it falls back
             to the behaviour defined in ``trim_invalid_geometry``.
-        match_engine (:class:`~map_metric_api.match_detections.MatchEngineBase`): Optional, default to
+        match_engine (:class:`~map_metric_api.match_detections.MatchEngine`): Optional, default to
             :class:`~playground_metrics.match_detections.MatchEngineIoU`. If provided matching will be done using the
             provided ``match_engine`` instead of the default one. Note that the ``threshold`` and ``match_algorithm``
             provided parameters will be overridden by those provided in the ``match_engine``.
@@ -79,7 +80,7 @@ class MeanAveragePrecisionMetric:
             constructed by :meth:`compute` from accumulated values
         number_missed_ground_truth_per_class (defaultdict): The number of ground truth not matched to a detection as
             constructed by :meth:`compute` from accumulated values
-        match_engine (:class:`~map_metric_api.match_detections.MatchEngineBase`) : The match_engine object used to match
+        match_engine (:class:`~map_metric_api.match_detections.MatchEngine`) : The match_engine object used to match
             detections and ground truths. If none where provided in the constructor call, it defaults to
             :class:`~playground_metrics.match_detections.MatchEngineIoU`.
 

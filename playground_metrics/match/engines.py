@@ -1,15 +1,49 @@
 """Implement the public interface to match a set of detections and ground truths."""
 
+from enum import Enum
 from abc import ABC, abstractmethod
 
 import numpy as np
 from pygeos import area, is_empty, intersection
 
-from .utils.geometry import GeometryType, intersection_over_union, is_type, euclidean_distance, as_boxes, \
+from .functional import non_unitary_match, xview_match, coco_match, sort_detection_by_confidence
+from .geometry import GeometryType, intersection_over_union, is_type, euclidean_distance, as_boxes, \
     point_to_box, as_points
 
 
-class MatchEngineBase(ABC):
+class _FunctionValue:
+    """Used to make a useless wrapper around functions to allow them to pass as enumeration values."""
+
+    def __init__(self, function):
+        self.function = function
+
+    def __call__(self, *args, **kwargs):
+        return self.function(*args, **kwargs)
+
+
+class MatchAlgorithm(Enum):
+    """Every available match algorithms by name."""
+
+    coco = _FunctionValue(coco_match)
+    xview = _FunctionValue(xview_match)
+    non_unitary = _FunctionValue(non_unitary_match)
+
+    def __call__(self, *args, **kwargs):
+        r"""Match geometries for a given similarity matrix and delta matrix.
+
+        Args:
+            similarity_matrix (numpy.ndarray): A (#detection, #gt) similarity matrix between detections and
+                ground truths.
+            delta_matrix (numpy.ndarray): A binary (#detection, #gt) matrix which encodes the trim step results.
+
+        Returns:
+            numpy.ndarray: A binary matrix of all matches of dimension (#detections, #ground truth)
+
+        """
+        return self.value(*args, **kwargs)
+
+
+class MatchEngine(ABC):
     """Match detection with their ground truth according a similarity matrix and a detection confidence score.
 
     Matching may be done using coco algorithm or xView algorithm (which yield different matches as described for an
@@ -36,7 +70,7 @@ class MatchEngineBase(ABC):
         self._ground_truth_types = (GeometryType.POLYGON, GeometryType.POINT)
 
     def __repr__(self):
-        """Represent the :class:`~playground_metrics.match_detections.MatchEngineBase` as a string."""
+        """Represent the :class:`~playground_metrics.match_detections.MatchEngine` as a string."""
         d_arg = []
         for arg in ['threshold', 'match_algorithm', 'bounding_box_size']:
             if hasattr(self, arg):
@@ -44,7 +78,7 @@ class MatchEngineBase(ABC):
         return '{}({})'.format(self.__class__.__name__, ', '.join(d_arg))
 
     def __str__(self):
-        """Represent the :class:`~playground_metrics.match_detections.MatchEngineBase` as a string."""
+        """Represent the :class:`~playground_metrics.match_detections.MatchEngine` as a string."""
         d_arg = []
         for arg in ['threshold', 'match_algorithm', 'bounding_box_size']:
             if hasattr(self, arg):
@@ -179,137 +213,23 @@ class MatchEngineBase(ABC):
                                                 for geom_type in self._ground_truth_types])))
 
         # We sort detections by confidence before computing the similarity matrix
-        detections = self._sort_detection_by_confidence(detections)
+        detections = sort_detection_by_confidence(detections)
 
         # Compute similarity matrix and An array containing the indices in columns of similarity passing the first
         # trimming (Typically for IoU this would be the result of a simple thresholding).
-        similarity_matrix, similarity_matches = self._compute_similarity_matrix_and_trim(detections,
-                                                                                         ground_truths,
-                                                                                         label_mean_area)
+        similarity_matrix, delta_matrix = self._compute_similarity_matrix_and_trim(detections,
+                                                                                   ground_truths,
+                                                                                   label_mean_area)
 
         # We match the detection and the ground truth using the configured algorithm
-        if self.match_algorithm == 'coco':
-            return self._coco_match(similarity_matrix, similarity_matches)
-        if self.match_algorithm == 'non-unitary':
-            return self._non_unitary_match(similarity_matrix, similarity_matches)
-        if self.match_algorithm == 'xview':
-            return self._xview_match(similarity_matrix, similarity_matches)
-        raise ValueError('Invalid match algorithm: must be either coco, xview or non-unitary')
-
-    @staticmethod
-    def _sort_detection_by_confidence(detections):
-        # We sort the detection by decreasing confidence
-        sort_indices = np.argsort(detections[:, 1])[::-1]
-        return detections[sort_indices, :]
-
-    @staticmethod
-    def _coco_match(similarity_matrix, similarity_matches):  # noqa: D205,D400
-        r"""Match detections bounding boxes with ground truth bounding boxes for a given similarity matrix and trim
-        method using Coco algorithm.
-
-        Args:
-            similarity_matrix: The similarity matrix between detections and ground truths : dimension (#detection, #gt)
-
-        Returns:
-            ndarray: A binary matrix of all matches of dimension (#detections, #ground truth)
-
-        """
-        # We prepare the detection match matrix
-        match_matrix = np.zeros_like(similarity_matrix)
-
-        if similarity_matches.shape[1] == 0:  # No matches at all
-            return match_matrix
-
-        forward = {match[0, 0]: match[1, :]
-                   for match in np.hsplit(similarity_matches, np.where(np.diff(similarity_matches[0, :]) != 0)[0] + 1)}
-        similarity_matches_by_gt = similarity_matches[:, np.argsort(similarity_matches[1, :])]
-        backward = {match[1, 0]: match[0, :]
-                    for match in np.hsplit(similarity_matches_by_gt,
-                                           np.where(np.diff(similarity_matches_by_gt[1, :]) != 0)[0] + 1)}
-
-        for k in range(similarity_matrix.shape[0]):
-            # For each detection we select its ground truth match
-            detection_matches = forward.get(k, np.zeros((0, 0)))
-
-            # If we don't have anything left to match -> skip
-            if detection_matches.size == 0:
-                continue
-
-            # We select the biggest similarity_matrix over them
-            m = np.argmax(similarity_matrix[k, detection_matches])
-            n = detection_matches[m]
-
-            # We delete the ground truth column index from future match testing
-            for d in backward[n]:
-                forward[d] = forward[d][forward[d] != n]
-
-            # We set the match flag to 1
-            match_matrix[k, n] = 1
-
-        return match_matrix
-
-    @staticmethod
-    def _xview_match(similarity_matrix, similarity_matches):  # noqa: D205,D400
-        r"""Match detections bounding boxes with ground truth bounding boxes for a0 given similarity matrix and trim
-        method using xView algorithm.
-
-        Args:
-            similarity_matrix: The similarity matrix between detections and ground truths : dimension (#detection, #gt)
-
-        Returns:
-            ndarray: A binary matrix of all matches of dimension (#detections, #ground truth)
-
-        """
-        # We prepare the detection match matrix
-        match_matrix = np.zeros_like(similarity_matrix)
-
-        if similarity_matches.shape[1] == 0:  # No matches at all
-            return match_matrix
-
-        ground_truth_match_vector = [0] * similarity_matrix.shape[1]
-
-        forward = {match[0, 0]: match[1, :]
-                   for match in np.hsplit(similarity_matches, np.where(np.diff(similarity_matches[0, :]) != 0)[0] + 1)}
-
-        for k in range(similarity_matrix.shape[0]):
-            # For each detection we select its ground truth match
-            detection_matches = forward.get(k, np.zeros((0, 0)))
-
-            # If we don't have anything left to match -> skip
-            if detection_matches.size == 0:
-                continue
-
-            # We select the biggest similarity_matrix over them
-            m = np.argmax(similarity_matrix[k, detection_matches])
-            n = detection_matches[m]
-
-            if ground_truth_match_vector[n] == 0:
-                # We match the detection and the ground truth
-                ground_truth_match_vector[n] = 1
-                match_matrix[k, n] = 1
-
-        return match_matrix
-
-    @staticmethod
-    def _non_unitary_match(similarity_matrix, similarity_matches):  # noqa: D205,D400
-        r"""Match detections bounding boxes with ground truth bounding boxes for a given similarity matrix for every
-        positive example yielded by the  trim method.
-
-        Args:
-            similarity_matrix: The similarity matrix between detections and ground truths : dimension (#detection, #gt)
-
-        Returns:
-            ndarray: A binary matrix of all matches of dimension (#detections, #ground truth)
-
-        """
-        # We prepare the detection match matrix
-        match_matrix = np.zeros_like(similarity_matrix)
-        match_matrix[similarity_matches[0, :], similarity_matches[1, :]] = 1
-
-        return match_matrix
+        try:
+            return MatchAlgorithm[self.match_algorithm.replace('-', '_')](similarity_matrix, delta_matrix)
+        except KeyError as error:
+            raise ValueError('Invalid match algorithm: '
+                             'Expected one of ({})'.format(', '.join(MatchAlgorithm.__members__.keys()))) from error
 
 
-class MatchEngineIoU(MatchEngineBase):
+class MatchEngineIoU(MatchEngine):
     """Match detection with their ground truth according the their IoU and the detection confidence score.
 
     Args:
@@ -351,7 +271,7 @@ class MatchEngineIoU(MatchEngineBase):
             ndarray : An IoU matrix (#detections, #ground truth)
 
         """
-        detections = self._sort_detection_by_confidence(detections)
+        detections = sort_detection_by_confidence(detections)
         iou = intersection_over_union(detections[:, 0], ground_truths[:, 0])
         if label_mean_area is not None:
             iou = (label_mean_area / area(ground_truths[:, 0])) * iou
@@ -392,7 +312,7 @@ class MatchEngineIoU(MatchEngineBase):
         return res[:, np.argsort(np.nonzero(similarity_matrix >= self.threshold)[0])]
 
 
-class MatchEngineEuclideanDistance(MatchEngineBase):
+class MatchEngineEuclideanDistance(MatchEngine):
     """Match detection with their ground truth according the their relative distance and the detection confidence score.
 
     Args:
@@ -451,7 +371,7 @@ class MatchEngineEuclideanDistance(MatchEngineBase):
             ndarray : An similarity matrix (#detections, #ground truth)
 
         """
-        detections = self._sort_detection_by_confidence(detections)
+        detections = sort_detection_by_confidence(detections)
         similarity = euclidean_distance(as_points(detections[:, 0]),
                                         point_to_box(ground_truths[:, 0],
                                                      width=2 * self.threshold,
@@ -495,7 +415,7 @@ class MatchEngineEuclideanDistance(MatchEngineBase):
         return res[:, np.argsort(np.nonzero(similarity_matrix >= self._threshold)[0])]
 
 
-class MatchEnginePointInBox(MatchEngineBase):  # noqa: D205,D400
+class MatchEnginePointInBox(MatchEngine):  # noqa: D205,D400
     """Match detection with their ground truth according the their relative distance, whether a detection point is in a
     ground truth box and the detection confidence score.
 
@@ -546,7 +466,7 @@ class MatchEnginePointInBox(MatchEngineBase):  # noqa: D205,D400
             ndarray : An similarity matrix (#detections, #ground truth)
 
         """
-        detections = self._sort_detection_by_confidence(detections)
+        detections = sort_detection_by_confidence(detections)
         similarity = euclidean_distance(as_points(detections[:, 0]),
                                         as_boxes(ground_truths[:, 0]))
         return similarity
