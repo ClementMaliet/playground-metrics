@@ -1,50 +1,8 @@
 # flake8: noqa: E501
-import pytest
-
 import numpy as np
 from pygeos import box
 
-from playground_metrics.utils.deprecation_utils import deprecated
 from playground_metrics.utils.iou_utils import add_confidence_from_max_iou
-
-
-def test_deprecation_no_docstring():
-    @deprecated('Reason')
-    def some_deprecated_function():
-        print('Some text')
-
-    with pytest.warns(DeprecationWarning):
-        some_deprecated_function()
-
-    print(some_deprecated_function.__doc__)
-
-    assert some_deprecated_function.__doc__ == """
-            .. warning::
-                The function ``some_deprecated_function`` is deprecated and may not work anymore or disappear in the future.
-
-                Reason for deprecation: *Reason*
-
-            """
-
-
-def test_deprecation_docstring():
-    @deprecated('Reason')
-    def some_deprecated_function():
-        """Some docstring"""
-        print('Some text')
-
-    with pytest.warns(DeprecationWarning):
-        some_deprecated_function()
-
-    print(some_deprecated_function.__doc__)
-
-    assert some_deprecated_function.__doc__ == """
-            .. warning::
-                The function ``some_deprecated_function`` is deprecated and may not work anymore or disappear in the future.
-
-                Reason for deprecation: *Reason*
-
-            Some docstring"""
 
 
 def test_confidence_from_max_iou_bbox():
