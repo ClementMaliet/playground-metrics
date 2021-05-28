@@ -12,7 +12,7 @@ from tests.test_match.test_match_iou.test_match_polygon import detections as det
 from tests.test_match.test_match_iou.test_match_polygon import gt as gt_corr_poly
 
 from playground_metrics.match.matcher import IntersectionOverUnionMatcher, Matcher
-from playground_metrics.utils.conversion import convert_to_bounding_box
+from playground_metrics.utils import convert_to_bounding_box
 
 
 class TestMatch:

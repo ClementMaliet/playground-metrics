@@ -12,9 +12,8 @@ from collections import defaultdict
 
 import numpy as np
 
-from .utils import to_builtin, to_list
-from playground_metrics.match.matcher import IntersectionOverUnionMatcher
-from .utils.conversion import get_type_and_convert
+from .match import IntersectionOverUnionMatcher
+from .utils import to_builtin, to_list, get_type_and_convert
 
 
 class MeanAveragePrecisionMetric:

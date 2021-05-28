@@ -1,11 +1,19 @@
-from collections.abc import Sized
+from typing import Sized
 
 import numpy as np
-from pygeos import polygons, points, box, is_valid, make_valid, get_num_geometries, get_geometry
+from pygeos import get_num_geometries, get_geometry, polygons, make_valid, is_valid, box, points
+
+from .match.geometry import is_type, GeometryType
 
 
-# Helpers functions
-from ..match.geometry import is_type, GeometryType
+def to_list(arr):
+    """Transform an numpy array into a list with homogeneous element type."""
+    return arr.astype(type(arr.ravel()[0])).tolist()
+
+
+def to_builtin(arr):
+    """Transform an numpy array into a numpy array with homogeneous element type."""
+    return arr.astype(type(arr.ravel()[0]))
 
 
 def get_type_and_convert(input_array, trim_invalid_geometry=False, autocorrect_invalid_geometry=False):

@@ -3,7 +3,7 @@ from pygeos import area
 from tests.resources.reference_functions import naive_compute_iou_matrix, sort_detection_by_confidence
 
 from playground_metrics.match.matcher import IntersectionOverUnionMatcher
-from playground_metrics.utils.conversion import convert_to_bounding_box
+from playground_metrics.utils import convert_to_bounding_box
 
 detections = np.concatenate((10 * np.array([[14.5, 0, 26, 5],
                                             [34, 41, 36, 43],

@@ -1,8 +1,8 @@
 import pytest
 import numpy as np
 
-from playground_metrics.utils.conversion import GeometryType, get_type_and_convert, convert_to_bounding_box, \
-    convert_to_polygon, convert_to_point
+from playground_metrics.utils.conversion import GeometryType
+from playground_metrics.utils import get_type_and_convert, convert_to_polygon, convert_to_bounding_box, convert_to_point
 from playground_metrics.match.geometry import is_type
 
 vector_input_list_score_class = [[[[[0, 0], [0, 1], [1, 1], [1, 0]]], 0.2, 0],
