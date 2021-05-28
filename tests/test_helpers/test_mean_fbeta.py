@@ -3,7 +3,7 @@ import os.path
 import numpy as np
 from pytest import raises, approx
 
-from playground_metrics.metrics_helper import MeanFBetaAtThresholds
+from playground_metrics.helpers import MeanFBetaAtThresholds
 
 
 class TestMeanFBetaAtThresholds:

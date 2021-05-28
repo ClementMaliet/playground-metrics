@@ -1,6 +1,6 @@
 import numpy as np
 
-from playground_metrics.map_metric import MeanAveragePrecisionMetric
+from ..map_metric import MeanAveragePrecisionMetric
 
 
 class MeanFBetaAtThresholds:

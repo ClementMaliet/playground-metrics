@@ -2,7 +2,7 @@
 import numpy as np
 from pygeos import box
 
-from playground_metrics.utils.iou_utils import add_confidence_from_max_iou
+from playground_metrics.helpers import add_confidence_from_max_iou
 
 
 def test_confidence_from_max_iou_bbox():

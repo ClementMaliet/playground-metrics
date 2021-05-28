@@ -1,6 +1,6 @@
 import numpy as np
 
-from ..match.matcher import IntersectionOverUnionMatcher
+from playground_metrics.match.matcher import IntersectionOverUnionMatcher
 
 
 def add_confidence_from_max_iou(detections, ground_truths):
