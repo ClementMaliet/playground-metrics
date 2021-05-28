@@ -64,7 +64,7 @@ class MeanAveragePrecisionMetric:
         * Polygon auto-correction will systematically fail on Polygons with at least one inner ring.
 
     Attributes:
-        mAP (float) : The mAP computed by :meth:`compute` from accumulated values
+        mean_average_precision (float) : The mAP computed by :meth:`compute` from accumulated values
         average_precision_per_class (defaultdict) : The AP for each label as constructed by :meth:`compute` from
             accumulated values
         precision_per_class (defaultdict) : The precision for each label as constructed by :meth:`compute` from
@@ -128,7 +128,7 @@ class MeanAveragePrecisionMetric:
         self._ground_truth_labels = set()
         self._confidence = defaultdict(self._empty_array)
         # Set return values
-        self.mAP = 0.0  # pylint: disable=invalid-name
+        self.mean_average_precision = 0.0
         self.average_precision_per_class = defaultdict(float)
         self.precision_per_class = defaultdict(float)
         self.recall_per_class = defaultdict(float)
@@ -308,9 +308,9 @@ class MeanAveragePrecisionMetric:
                 self.recall_per_class[ground_truth_label] = np.nan
 
         # self.average_precision_per_class is a defaultdict, when label is absent the value is 0 by default
-        self.mAP = np.nanmean(np.array([self.average_precision_per_class[label]
-                                        for label in self._ground_truth_labels]))
-        return self.mAP
+        self.mean_average_precision = np.nanmean(np.array([self.average_precision_per_class[label]
+                                                           for label in self._ground_truth_labels]))
+        return self.mean_average_precision
 
     def reset(self):
         r"""Reset all intermediate and return values to their initial value.
