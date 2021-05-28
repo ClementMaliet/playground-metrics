@@ -1,4 +1,4 @@
-__version__ = '1.0.0'
+__version__ = '2.0.0'
 
 from .map_metric import MeanAveragePrecisionMetric
 from .utils import get_type_and_convert, convert_to_bounding_box, convert_to_point, convert_to_polygon
