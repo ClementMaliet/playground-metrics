@@ -159,6 +159,10 @@ class MeanAveragePrecisionMetric:
                 * Points for a given class where each row is a ground truth stored as:
                   ``[x, y, label]``
 
+        Returns:
+            Dict[numpy.ndarray] : A dictionary of binary match matrix of dimension (#detections, #ground truth) where
+            keys corresponds to labels.
+
         Raises:
             KeyError : If ``self.label_mean_area`` is not ``None`` but a label is missing
 
@@ -203,6 +207,7 @@ class MeanAveragePrecisionMetric:
 
         self._ground_truth_labels.update(to_list(ground_truths[:, 1]), to_list(detections[:, 2]))
 
+        matches = {}
         for ground_truth_label in self._ground_truth_labels:
             try:
                 mean_area = self.label_mean_area[ground_truth_label]
@@ -215,6 +220,7 @@ class MeanAveragePrecisionMetric:
                 self.matcher.match(detections[to_builtin(detections[:, 2]) == ground_truth_label, :2],
                                    ground_truths[to_builtin(ground_truths[:, 1]) == ground_truth_label, :1],
                                    label_mean_area=mean_area)
+            matches[ground_truth_label] = match_matrix
 
             # Having this before checking if there were detections for this particular class breaks the xview score
             # equality test, however this is the way to go to ensure that False-Negative are correctly accounted for
@@ -234,6 +240,8 @@ class MeanAveragePrecisionMetric:
             self._confidence[ground_truth_label] = \
                 np.concatenate((self._confidence[ground_truth_label],
                                 np.sort(detections[to_builtin(detections[:, 2]) == ground_truth_label, 1])[::-1]))
+
+        return matches
 
     def compute(self):
         r"""Compute the **mAP** according to the accumulated values.
