@@ -27,7 +27,7 @@ def get_type_and_convert(input_array, trim_invalid_geometry=False, autocorrect_i
                 * Bounding boxes for a given class where each row is a detection stored as:
                   ``[x_min, y_min, x_max, y_max, confidence, label]``
                 * Polygons for a given class where each row is a detection stored as:
-                  ``[[[outer_ring], [inner_rings]], confidence, label]``
+                  ``[[outer_ring, *inner_rings], confidence, label]``
                 * Points for a given class where each row is a detection stored as:
                   ``[x, y, confidence, label]``
 
@@ -36,7 +36,7 @@ def get_type_and_convert(input_array, trim_invalid_geometry=False, autocorrect_i
                 * Bounding boxes for a given class where each row is a ground truth stored as:
                   ``[x_min, y_min, x_max, y_max, label]``
                 * Polygons for a given class where each row is a ground truth stored as:
-                  ``[[[outer_ring], [inner_rings]], label]``
+                  ``[[outer_ring, *inner_rings], label]``
                 * Points for a given class where each row is a ground truth stored as:
                   ``[x, y, label]``
 
@@ -165,7 +165,7 @@ def convert_to_polygon(input_array, trim_invalid_geometry=False, autocorrect_inv
 
     Args:
         input_array (ndarray, list): A ndarray of Polygons optionally followed by a confidence value and/or a label
-            where each row is: ``[[[outer_ring], [inner_rings]], (confidence), (label)]``
+            where each row is: ``[[outer_ring, *inner_rings], (confidence), (label)]``
         trim_invalid_geometry (bool): Optional, default to ``False``. If set to ``True`` conversion will ignore invalid
             geometries and leave them out of ``output_array``. This means that the function will return an array where
             ``output_array.shape[0] <= input_array.shape[0]``.  If set to ``False``, an invalid geometry will raise an

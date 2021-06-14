@@ -1,15 +1,19 @@
 import pytest
 import numpy as np
+from pygeos import box, polygons, points, equals
 
-from playground_metrics.utils.conversion import GeometryType
-from playground_metrics.utils import get_type_and_convert, convert_to_polygon, convert_to_bounding_box, convert_to_point
+from playground_metrics.utils import GeometryType, get_type_and_convert, convert_to_polygon, convert_to_bounding_box, \
+    convert_to_point
 from playground_metrics.match.geometry import is_type
 
-vector_input_list_score_class = [[[[[0, 0], [0, 1], [1, 1], [1, 0]]], 0.2, 0],
+vector_input_list_score_class = [[[[[0, 0], [0, 1], [1, 1], [1, 0]],
+                                   [[0.3, 0.3], [0.3, 0.7], [0.7, 0.7], [0.7, 0.3]]], 0.2, 0],
                                  [[[[0, 0], [0, 1], [1, 1], [1, 0]]], 0.2, 0]]
-vector_input_list_class = [[[[[0, 0], [0, 1], [1, 1], [1, 0]]], 0],
+vector_input_list_class = [[[[[0, 0], [0, 1], [1, 1], [1, 0]],
+                             [[0.3, 0.3], [0.3, 0.7], [0.7, 0.7], [0.7, 0.3]]], 0],
                            [[[[0, 0], [0, 1], [1, 1], [1, 0]]], 0]]
-vector_input_list = [[[[[0, 0], [0, 1], [1, 1], [1, 0]]]],
+vector_input_list = [[[[[0, 0], [0, 1], [1, 1], [1, 0]],
+                      [[0.3, 0.3], [0.3, 0.7], [0.7, 0.7], [0.7, 0.3]]]],
                      [[[[0, 0], [0, 1], [1, 1], [1, 0]]]]]
 
 bbox_input_list_score_class = [[0, 0, 1, 1, 0.2, 0],
@@ -38,9 +42,11 @@ point_input_ndarray_score_class = np.array(point_input_list_score_class)
 point_input_ndarray_class = np.array(point_input_list_class)
 point_input_ndarray = np.array(point_input_list)
 
-vector_input_list_score_class_str = [[[[[0, 0], [0, 1], [1, 1], [1, 0]]], 0.2, '0'],
+vector_input_list_score_class_str = [[[[[0, 0], [0, 1], [1, 1], [1, 0]],
+                                       [[0.3, 0.3], [0.3, 0.7], [0.7, 0.7], [0.7, 0.3]]], 0.2, '0'],
                                      [[[[0, 0], [0, 1], [1, 1], [1, 0]]], 0.2, '0']]
-vector_input_list_class_str = [[[[[0, 0], [0, 1], [1, 1], [1, 0]]], '0'],
+vector_input_list_class_str = [[[[[0, 0], [0, 1], [1, 1], [1, 0]],
+                                 [[0.3, 0.3], [0.3, 0.7], [0.7, 0.7], [0.7, 0.3]]], '0'],
                                [[[[0, 0], [0, 1], [1, 1], [1, 0]]], '0']]
 
 bbox_input_list_score_class_str = [[0, 0, 1, 1, 0.2, '0'],
@@ -53,9 +59,11 @@ point_input_list_score_class_str = [[0, 1, 0.2, '0'],
 point_input_list_class_str = [[0, 1, '0'],
                               [0, 1, '0']]
 
-vector_input_list_score_class_tuple = [[[[[0, 0], [0, 1], [1, 1], [1, 0]]], 0.2, (0, )],
+vector_input_list_score_class_tuple = [[[[[0, 0], [0, 1], [1, 1], [1, 0]],
+                                         [[0.3, 0.3], [0.3, 0.7], [0.7, 0.7], [0.7, 0.3]]], 0.2, (0, )],
                                        [[[[0, 0], [0, 1], [1, 1], [1, 0]]], 0.2, (0, )]]
-vector_input_list_class_tuple = [[[[[0, 0], [0, 1], [1, 1], [1, 0]]], (0, )],
+vector_input_list_class_tuple = [[[[[0, 0], [0, 1], [1, 1], [1, 0]],
+                                   [[0.3, 0.3], [0.3, 0.7], [0.7, 0.7], [0.7, 0.3]]], (0, )],
                                  [[[[0, 0], [0, 1], [1, 1], [1, 0]]], (0, )]]
 
 bbox_input_list_score_class_tuple = [[0, 0, 1, 1, 0.2, (0, )],
@@ -192,6 +200,13 @@ class TestConversion:
     class_conv = {'bbox': GeometryType.POLYGON, 'polygon': GeometryType.POLYGON, 'point': GeometryType.POINT}
     class_conv_fn = {'bbox': convert_to_bounding_box, 'polygon': convert_to_polygon, 'point': convert_to_point}
     class_start = {'bbox': 4, 'polygon': 1, 'point': 2}
+    class_reference = {'bbox': [box(0, 0, 1, 1),
+                                box(0, 0, 1, 1)],
+                       'polygon': [polygons([[0, 0], [0, 1], [1, 1], [1, 0]],
+                                            [[[0.3, 0.3], [0.3, 0.7], [0.7, 0.7], [0.7, 0.3]]]),
+                                   polygons([[0, 0], [0, 1], [1, 1], [1, 0]])],
+                       'point': [points([0, 1]),
+                                 points([0, 1])]}
 
     def _make_type_test(self, data_in, true_type):
         # Test sanity checks
@@ -210,10 +225,13 @@ class TestConversion:
         assert type_ == 'undefined'
         assert input_array.size == 0
 
-        # Test actual conversion
+        # Test tha actual conversion
         data_conv = self.class_conv_fn[true_type](data_in)
         print(data_in, data_conv)
         assert np.all(is_type(data_conv[:, 0], self.class_conv[true_type]))
+        assert np.all(equals(data_conv[:, 0], self.class_reference[true_type]))
+
+        # Test that the conversion keep confidence and label as is
         data_in = np.array(data_in)
         if len(data_in.shape) > 2:
             object_array = np.ndarray((data_in.shape[0], 1), dtype=np.dtype('O'))
